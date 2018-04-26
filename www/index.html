@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=660">
+        <title>TEngine</title>
+        <style>
+        body {
+            margin: 10px;
+            background-color: black;
+        }
+        .container {
+            width: 640px;
+            margin: 0 auto;
+        }
+        canvas {
+            border: 1px solid #222;
+        }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <canvas id="cv"></canvas>
+        </div>
+        <script type="text/javascript" src="static/tengine.js"></script>
+        <script type="text/javascript">
+        (function () {
+            var te = new TEngine(document.getElementById('cv'));
+            te.drawTestScreen();
+        })();
+        </script>
+    </body>
+</html>
