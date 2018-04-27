@@ -91,6 +91,7 @@ AAA8ZgwYMn4AAAAAAAAAAAAAAAAAfn5+fn5+fgAAAAAAAAAAAAAAAAAAAAAAAAAAAA==
         this._bgColor = this._colors[TEngine.COLOR_BLACK];
 
         this._ctx = canvas.getContext('2d');
+        this._ctxAudio = new (window.AudioContext || window.webkitAudioContext)();
 
         this._fntImageData = this._ctx.createImageData(16*FNT_WIDTH, 16*FNT_HEIGHT);
         var data = this._fntImageData.data;
@@ -135,6 +136,19 @@ AAA8ZgwYMn4AAAAAAAAAAAAAAAAAfn5+fn5+fgAAAAAAAAAAAAAAAAAAAAAAAAAAAA==
     TEngine.COLOR_BRIGHT_CYAN = 13;
     TEngine.COLOR_BRIGHT_YELLOW = 14;
     TEngine.COLOR_BRIGHT_WHITE = 15;
+
+    TEngine.prototype._createSquareOscillator = function(freq, gain, duration) {
+        var gai = this._ctxAudio.createGain();
+        gai.gain.setValueAtTime(gain, this._ctxAudio.currentTime);
+        gai.connect(this._ctxAudio.destination);
+        var osc = this._ctxAudio.createOscillator();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(freq, this._ctxAudio.currentTime);
+        osc.connect(gai);
+        osc.start();
+        osc.stop(this._ctxAudio.currentTime + duration);
+        return osc;
+    }
 
     TEngine.prototype.setColors = function(fg, bg) {
         this._fgColor = this._colors[fg];
@@ -220,6 +234,88 @@ AAA8ZgwYMn4AAAAAAAAAAAAAAAAAfn5+fn5+fgAAAAAAAAAAAAAAAAAAAAAAAAAAAA==
         this.setColors(TEngine.COLOR_MAGENTA, TEngine.COLOR_GREEN);
         this.clearRectangle(40, 16, 8, 4);
         this.drawRectangle(44, 18, 8, 4);
+    }
+
+    TEngine.prototype.generateLoadTone = function(duration) {
+        this._createSquareOscillator(743, 0.025, duration);
+    }
+
+    TEngine.prototype.generateLoadNoise = function(duration) {
+        var f = [1016, 2037];
+        var k = 0;
+        var osc = this._createSquareOscillator(f[k], 0.025, duration);
+        for (var i = 0; i < duration; i += 0.005) {
+            if (Math.random() < 0.35) {
+                k = (k + 1)%2;
+                osc.frequency.setValueAtTime(f[k], this._ctxAudio.currentTime + i);
+            }
+        }
+    }
+
+    TEngine.prototype.startLoaderEffect = function(prog, then) {
+        // fake loader effect based on ZX Spectrum
+        var drawProgramRectangle = (prog) => {
+            this.setColors(TEngine.COLOR_BLACK, TEngine.COLOR_WHITE);
+            this.clearRectangle(5, 5, 70, 20);
+            if (prog) {
+                this.drawText('Program: ' + prog, 5, 6);
+            }
+        };
+        var drawRandomBars = (fg, bg, duration, then) => {
+            var bars = new Array(30).fill(0).map(() => {
+                return Math.round(Math.random());
+            });
+            this.setColors(fg, bg);
+            var drawBar = (y) => {
+                if (y > 4 && y < 25) {
+                    if (bars[y]) {
+                        this.drawRectangle(0, y, 5, 1);
+                        this.drawRectangle(75, y, 80, 1);
+                    } else {
+                        this.clearRectangle(0, y, 5, 1);
+                        this.clearRectangle(75, y, 80, 1);
+                    }
+                } else if (bars[y]) {
+                    this.drawRectangle(0, y, 80, 1);
+                } else {
+                    this.clearRectangle(0, y, 80, 1);
+                }
+            };
+            for (var y = 0; y < 30; y++) {
+                drawBar(y);
+            }
+            var i = setInterval(() => {
+                for (var y = 0; y < 30; y++) {
+                    if (Math.random() < 0.35) {
+                        bars[y] = (bars[y] + 1)%2
+                        drawBar(y);
+                    }
+                }
+            }, 75);
+            setTimeout(() => {
+                clearInterval(i)
+                if (then) {
+                    then.call(window);
+                }
+            }, duration);
+        };
+        // fake loader
+        this.generateLoadTone(2);
+        drawProgramRectangle();
+        drawRandomBars(TEngine.COLOR_RED, TEngine.COLOR_CYAN, 2000, () => {
+            this.clear();
+            drawProgramRectangle(prog);
+            setTimeout(() => {
+                this.generateLoadNoise(5);
+                drawRandomBars(TEngine.COLOR_BLUE, TEngine.COLOR_YELLOW, 5000, () => {
+                    this.setColors(TEngine.COLOR_BRIGHT_WHITE, TEngine.COLOR_BLACK);
+                    this.clear();
+                    if (then) {
+                        then.call(window);
+                    }
+                });
+            }, 1000)
+        });
     }
 
 })();
