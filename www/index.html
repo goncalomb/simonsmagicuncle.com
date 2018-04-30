@@ -3,7 +3,7 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=660">
-        <title>TEngine</title>
+        <title>Simon's Magic Uncle (.com)</title>
         <style>
         body {
             margin: 10px;
@@ -23,13 +23,7 @@
             <canvas id="cv"></canvas>
         </div>
         <script type="text/javascript" src="static/tengine.js"></script>
-        <script type="text/javascript">
-        (function () {
-            var te = new TEngine(document.getElementById('cv'));
-            te.startLoaderEffect('test', () => {
-                te.drawTestScreen();
-            });
-        })();
-        </script>
+        <script type="text/javascript" src="static/game.js"></script>
+        <script type="text/javascript">var game = new Game(document.getElementById('cv'));</script>
     </body>
 </html>
