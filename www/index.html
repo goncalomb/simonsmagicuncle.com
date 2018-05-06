@@ -27,7 +27,13 @@
         }
         canvas {
             user-select: none;
-            border: 1px solid #222;
+        }
+        #warning span {
+            display: inline-block;
+            margin-bottom: 3em;
+        }
+        #warning a {
+            font-size: 1.5em;
         }
         #links {
             display: none;
@@ -44,20 +50,27 @@
     </head>
     <body>
         <div class="container">
-            <canvas id="cv"></canvas>
+            <canvas id="cv" width="64" height="64"></canvas>
+            <p id="warning">
+                <span>simonsmagicuncle.com (works best on desktop)</span><br>
+                <a href="javascript:void(0);">WARNING: Flashing lights and noise! <strong>Click!</strong></a>
+            </p>
             <p id="links"><a href="https://goncalomb.com/">goncalomb.com</a> | <a href="https://yogscast.com/">The Yogscast</a></p>
             <iframe id="yt" width="560" height="315" frameborder="0" allow="autoplay; encrypted-media"></iframe>
         </div>
         <script type="text/javascript" src="static/tengine.js"></script>
         <script type="text/javascript" src="static/game.js"></script>
         <script type="text/javascript">
-        var game = new Game(document.getElementById('cv'));
-        setTimeout(() => {
-            document.getElementById('links').classList.add('show');
+        document.querySelector('#warning a').addEventListener('click', (e) => {
+            window.game = new Game(document.getElementById('cv'));
+            e.currentTarget.parentElement.style.display = 'none';
             setTimeout(() => {
-                document.getElementById('yt').src = 'https://www.youtube-nocookie.com/embed/3Rc7zqciIqo?rel=0&amp;start=1317';
-            }, 3000);
-        }, 15000);
+                document.getElementById('links').classList.add('show');
+                setTimeout(() => {
+                    document.getElementById('yt').src = 'https://www.youtube-nocookie.com/embed/3Rc7zqciIqo?rel=0&amp;start=1317';
+                }, 3000);
+            }, 15000);
+        });
         </script>
     </body>
 </html>
