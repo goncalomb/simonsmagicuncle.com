@@ -56,7 +56,6 @@
                 <a href="javascript:void(0);">WARNING: Flashing lights and noise! <strong>Click!</strong></a>
             </p>
             <p id="links"><a href="https://goncalomb.com/">goncalomb.com</a> | <a href="https://yogscast.com/">The Yogscast</a></p>
-            <iframe id="yt" width="560" height="315" frameborder="0" allow="autoplay; encrypted-media"></iframe>
         </div>
         <script type="text/javascript" src="static/tengine.js"></script>
         <script type="text/javascript" src="static/game.js"></script>
@@ -67,7 +66,9 @@
             setTimeout(() => {
                 document.getElementById('links').classList.add('show');
                 setTimeout(() => {
-                    document.getElementById('yt').src = 'https://www.youtube-nocookie.com/embed/3Rc7zqciIqo?rel=0&amp;start=1317';
+                    var range = document.createRange();
+                    var frag = range.createContextualFragment('<iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/3Rc7zqciIqo?rel=0&amp;start=1317" frameborder="0" allow="autoplay; encrypted-media"></iframe>');
+                    document.querySelector('.container').appendChild(frag);
                 }, 3000);
             }, 15000);
         });
