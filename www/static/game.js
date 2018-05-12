@@ -14,8 +14,14 @@
         }
     }
 
+    Game.LASER_POWER_MAX = 69;
+    Game.LASER_POWER_REGEN = 0.60;
     Game.AREA_MIN_X = 23;
-    Game.AREA_MIN_Y = 5;
+    Game.AREA_MIN_Y = 6;
+
+    Game.prototype._laserRegeneration = function(l, p) {
+        return l + (Math.pow(0.9*p - 0.9, 7) + 1)*0.55;
+    }
 
     Game.prototype._registerEventListeners = function(canvas) {
         var bound = canvas.getBoundingClientRect();
@@ -118,8 +124,9 @@ ___# # #   # #__# #  #   ___#   #   # #  # #__# # #___   #__# #  # #___ #__ #___
 
         // update lasers
         this._te.setColors(TEngine.COLOR_BRIGHT_RED, TEngine.COLOR_BLACK);
-        if (this._firing) {
+        if (this._firing && this._laserPower > 1) {
             this._lasers.push(new Game.Laser(this));
+            this._laserPower--;
         }
         for (var i = 0, l = this._lasers.length; i < l; i++) {
             if (this._lasers[i].step()) {
@@ -127,9 +134,10 @@ ___# # #   # #__# #  #   ___#   #   # #  # #__# # #___   #__# #  # #___ #__ #___
                 l--;
             }
         }
+
         // update arrows
         this._te.setColors(TEngine.COLOR_BRIGHT_WHITE, TEngine.COLOR_BLACK);
-        if (Math.random() < 0.40) {
+        if (Math.random() < this._arrowSpawnChance) {
             this._arrows.push(new Game.Arrow(this));
         }
         for (var i = 0, l = this._arrows.length; i < l; i++) {
@@ -138,16 +146,38 @@ ___# # #   # #__# #  #   ___#   #   # #  # #__# # #___   #__# #  # #___ #__ #___
                 l--;
             }
         }
+
+        // update arrow spawn chance
+        if (this._arrowSpawnChance < 0.25) {
+            this._arrowSpawnChance += 0.0002;
+        }
+
+        // draw score
+        this._te.drawText(this._score.toString(), 7, 7);
+
+        // draw laser power
+        this._te.setColors(TEngine.COLOR_BRIGHT_RED, TEngine.COLOR_BLACK);
+        var p = this._laserPower/Game.LASER_POWER_MAX;
+        this._te.clearRectangle(7, 5, 73, 1);
+        this._te.drawRectangle(7, 5, Math.round(66*p), 1);
+        this._te.drawText(Math.floor(this._laserPower).toString(), 74, 5);
+        this._laserPower = Math.min(Game.LASER_POWER_MAX, this._laserRegeneration(this._laserPower, p));
     }
 
     Game.prototype.start = function() {
         this._pointerX = 79;
         this._pointerY = 29;
+        this._arrowSpawnChance = 0.05;
+        this._score = 0;
         this._firing = false;
+        this._laserPower = Game.LASER_POWER_MAX;
         this._lasers = [];
         this._arrows = [];
         this._drawLogo();
         this._drawUncle(10, 9);
+        this._te.setColors(TEngine.COLOR_WHITE, TEngine.COLOR_BLACK);
+        this._te.drawText('POWER:', 0, 5);
+        this._te.drawText('SCORE: 0', 0, 7);
         this._interval = setInterval(() => {
             this._step();
         }, 50);
@@ -221,12 +251,13 @@ ___# # #   # #__# #  #   ___#   #   # #  # #__# # #___   #__# #  # #___ #__ #___
         var hit = false;
         for (var i = 0, l = this._game._arrows.length; i < l; i++) {
             var arr = this._game._arrows[i];
-            if ((this._x == arr._x || this._x == arr._x + 1 ) && this._y == arr._y) {
+            if ((this._x == arr._x || this._x == arr._x + 1 || this._x == arr._x + 2) && this._y == arr._y) {
                 this.destroy();
                 arr.destroy();
                 this._game._arrows.splice(i--, 1);
                 l--;
                 hit = true;
+                this._game._score++;
             }
         }
         if (hit) {
