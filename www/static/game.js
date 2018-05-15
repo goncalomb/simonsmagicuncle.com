@@ -24,11 +24,11 @@
     }
 
     Game.prototype._registerEventListeners = function(canvas) {
-        var bound = canvas.getBoundingClientRect();
         var addEv = function(el, ev, fn) {
             ev.forEach((v) => { el.addEventListener(v, fn); });
         }
         addEv(canvas, ['mousemove', 'touchmove'], (e) => {
+            var bound = canvas.getBoundingClientRect();
             var p = e;
             if (e.type == 'touchmove') {
                 p = e.targetTouches[0];
