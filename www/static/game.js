@@ -2,6 +2,7 @@
 
     var Game = window.Game = function(canvas) {
         this._te = new TEngine(canvas);
+        this._interval = 0;
         // canvas.style.cursor = 'none';
         if (window.location.hash == '#no-loader') {
             this._registerEventListeners(canvas);
@@ -14,6 +15,9 @@
         }
     }
 
+    Game.UNCLE_X = 10;
+    Game.UNCLE_Y = 9;
+    Game.UNCLE_HEIGHT = 17;
     Game.LASER_POWER_MAX = 69;
     Game.LASER_POWER_REGEN = 0.60;
     Game.AREA_MIN_X = 23;
@@ -114,13 +118,18 @@ ___# # #   # #__# #  #   ___#   #   # #  # #__# # #___   #__# #  # #___ #__ #___
 
     Game.prototype._step = function() {
         // update eyes
-        if (this._firing) {
+        if (this._firing && this._life) {
             this._te.setColors(TEngine.COLOR_BRIGHT_RED, TEngine.COLOR_BRIGHT_MAGENTA);
         } else {
             this._te.setColors(TEngine.COLOR_BLACK, TEngine.COLOR_BRIGHT_MAGENTA);
         }
-        this._te.drawText('\x07', 10 + 5, 9 + 2);
-        this._te.drawText('\x07', 10 + 7, 9 + 2);
+        if (this._life) {
+            this._te.drawText('\x07', 10 + 5, 9 + 2);
+            this._te.drawText('\x07', 10 + 7, 9 + 2);
+        } else {
+            this._te.drawText('X', 10 + 5, 9 + 2);
+            this._te.drawText('X', 10 + 7, 9 + 2);
+        }
 
         // update lasers
         this._te.setColors(TEngine.COLOR_BRIGHT_RED, TEngine.COLOR_BLACK);
@@ -155,18 +164,39 @@ ___# # #   # #__# #  #   ___#   #   # #  # #__# # #___   #__# #  # #___ #__ #___
         // draw score
         this._te.drawText(this._score.toString(), 7, 7);
 
+        // draw life
+        this._te.clearRectangle(12, 7, this._life*2 + 1, 1);
+        if (this._life) {
+            this._te.setColors(TEngine.COLOR_BRIGHT_RED, TEngine.COLOR_BLACK);
+            this._te.drawText('\x03 '.repeat(this._life), 12, 7);
+        } else {
+            this._laserPower = 0;
+        }
+
         // draw laser power
         this._te.setColors(TEngine.COLOR_BRIGHT_RED, TEngine.COLOR_BLACK);
         var p = this._laserPower/Game.LASER_POWER_MAX;
         this._te.clearRectangle(7, 5, 73, 1);
-        this._te.drawRectangle(7, 5, Math.round(66*p), 1);
-        this._te.drawText(Math.floor(this._laserPower).toString(), 74, 5);
+        this._te.drawRectangle(10, 5, Math.round(66*p), 1);
+        this._te.drawText(Math.floor(this._laserPower).toString(), 7, 5);
         this._laserPower = Math.min(Game.LASER_POWER_MAX, this._laserRegeneration(this._laserPower, p));
+
+        // draw end
+        if (!this._life) {
+            this._te.setColors(TEngine.COLOR_BRIGHT_WHITE, TEngine.COLOR_RED);
+            this._te.clearRectangle(14, 5, 36, 3);
+            this._te.drawText('GAME OVER, restarting in 5 seconds', 15, 6);
+        }
     }
 
     Game.prototype.start = function() {
+        this._te.setColors(TEngine.COLOR_WHITE, TEngine.COLOR_BLACK);
+        this._te.clear();
+        clearInterval(this._interval);
         this._pointerX = 79;
         this._pointerY = 29;
+        this._life = 5;
+        this._uncleHits = {};
         this._arrowSpawnChance = 0.05;
         this._score = 0;
         this._firing = false;
@@ -174,13 +204,20 @@ ___# # #   # #__# #  #   ___#   #   # #  # #__# # #___   #__# #  # #___ #__ #___
         this._lasers = [];
         this._arrows = [];
         this._drawLogo();
-        this._drawUncle(10, 9);
+        this._drawUncle(Game.UNCLE_X, Game.UNCLE_Y);
         this._te.setColors(TEngine.COLOR_WHITE, TEngine.COLOR_BLACK);
+        this._te.drawText('click to fire', Game.Laser.START_X + 5, Game.Laser.START_Y);
         this._te.drawText('POWER:', 0, 5);
         this._te.drawText('SCORE: 0', 0, 7);
         this._interval = setInterval(() => {
             this._step();
         }, 50);
+    }
+
+    Game.prototype.end = function() {
+        setTimeout(() => {
+            this.start();
+        }, 5000);
     }
 
     Game.prototype.stop = function() {
@@ -205,6 +242,16 @@ ___# # #   # #__# #  #   ___#   #   # #  # #__# # #___   #__# #  # #___ #__ #___
         // update
         this._xf -= 0.5;
         this._x = Math.floor(this._xf);
+        // hit uncle
+        if (this._x == Game.UNCLE_X + 8 && this._y >= Game.UNCLE_Y && this._y < Game.UNCLE_Y + Game.UNCLE_HEIGHT && !this._game._uncleHits[this._y]) {
+            this._game._uncleHits[this._y] = true;
+            if (this._game._life > 0) {
+                this._game._life--;
+                if (!this._game._life) {
+                    this._game.end();
+                }
+            }
+        }
         // test boundary
         if (this._x < 0) {
             return true;
